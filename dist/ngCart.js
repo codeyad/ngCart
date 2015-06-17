@@ -38,15 +38,16 @@ angular.module('ngCart', ['ngCart.directives'])
             };
         };
 
-        this.addItem = function (id, name, price, quantity, data) {
+        this.addItem = function (id, name, price, quantity, maxqty, data) {
 
             var inCart = this.getItemById(id);
 
             if (typeof inCart === 'object'){
                 //Update quantity of an item if it's already in the cart
                 inCart.setQuantity(quantity, false);
+                inCart.setMaxQuantity(maxqty);
             } else {
-                var newItem = new ngCartItem(id, name, price, quantity, data);
+                var newItem = new ngCartItem(id, name, price, quantity, maxqty, data);
                 this.$cart.items.push(newItem);
                 $rootScope.$broadcast('ngCart:itemAdded', newItem);
             }
@@ -180,7 +181,7 @@ angular.module('ngCart', ['ngCart.directives'])
             _self.$cart.tax = storedCart.tax;
 
             angular.forEach(storedCart.items, function (item) {
-                _self.$cart.items.push(new ngCartItem(item._id,  item._name, item._price, item._quantity, item._data));
+                _self.$cart.items.push(new ngCartItem(item._id,  item._name, item._price, item._quantity, item._maxqty, item._data));
             });
             this.$save();
         };
@@ -193,11 +194,12 @@ angular.module('ngCart', ['ngCart.directives'])
 
     .factory('ngCartItem', ['$rootScope', '$log', function ($rootScope, $log) {
 
-        var item = function (id, name, price, quantity, data) {
+        var item = function (id, name, price, quantity, maxqty, data) {
             this.setId(id);
             this.setName(name);
             this.setPrice(price);
             this.setQuantity(quantity);
+            this.setMaxQuantity(maxqty);
             this.setData(data);
         };
 
@@ -261,8 +263,22 @@ angular.module('ngCart', ['ngCart.directives'])
 
         };
 
+        item.prototype.setMaxQuantity = function(maxqty){
+            this._maxqty = maxqty;
+        };
+
         item.prototype.getQuantity = function(){
             return this._quantity;
+        };
+
+        item.prototype.getMaxQuantity = function(){
+            return this._maxqty;
+        };
+
+        item.prototype.getIsMaxQuantity = function(){
+            //console.log(this._maxqty+' '+this._quantity);
+            //console.log(this._maxqty);
+            return this._maxqty <= this._quantity;
         };
 
         item.prototype.setData = function(data){
@@ -356,12 +372,14 @@ angular.module('ngCart.directives', ['ngCart.fulfilment'])
                 };
 
                 if (scope.inCart()){
-                    scope.q = ngCart.getItemById(attrs.id).getQuantity();
+                  // scope.q = ngCart.getItemById(attrs.id).getQuantity();
+                   scope.q = parseInt(scope.quantity);
                 } else {
                     scope.q = parseInt(scope.quantity);
                 }
 
                 scope.qtyOpt =  [];
+
                 for (var i = 1; i <= scope.quantityMax; i++) {
                     scope.qtyOpt.push(i);
                 }
